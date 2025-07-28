@@ -6,40 +6,23 @@ import pandas as pd
 # --- Page setup ---
 st.set_page_config(page_title="APSAC WMS + Points Viewer", layout="wide")
 
-# --- Load and clean CSV ---
+# --- Load CSV ---
 data = pd.read_csv("AP Lat_long State and ITGI(1).csv")
-data.columns = data.columns.str.strip()  # Remove spaces in headers
+data.columns = data.columns.str.strip()
 
-# --- Detect Latitude and Longitude columns ---
-lat_candidates = [c for c in data.columns if "lat" in c.lower()]
-lon_candidates = [c for c in data.columns if "lon" in c.lower()]
+# --- Detect Latitude/Longitude ---
+lat_col = [c for c in data.columns if "lat" in c.lower()][0]
+lon_col = [c for c in data.columns if "lon" in c.lower()][0]
 
-if not lat_candidates or not lon_candidates:
-    st.error(f"CSV columns found: {data.columns.tolist()} - Could not detect Lat/Lon.")
-    st.stop()
-
-lat_col = lat_candidates[0]
-lon_col = lon_candidates[0]
-
-# --- Detect popup column ---
-popup_candidates = [c for c in data.columns if c not in [lat_col, lon_col]]
-popup_col = popup_candidates[0] if popup_candidates else None
-
-st.write("Detected Columns:", data.columns.tolist())
-st.write(f"Latitude column → {lat_col}")
-st.write(f"Longitude column → {lon_col}")
-if popup_col:
-    st.write(f"Popup column → {popup_col}")
-else:
-    st.write("No popup column detected, using coordinates only.")
+# --- Detect all other columns for popup ---
+info_columns = [c for c in data.columns if c not in [lat_col, lon_col]]
 
 # --- Create folium map ---
-m = folium.Map(location=[15.9, 79.7], zoom_start=7)
+m = folium.Map(location=[data[lat_col].mean(), data[lon_col].mean()], zoom_start=7)
 
-# --- APSAC GeoServer WMS URL ---
+# --- APSAC GeoServer WMS ---
 wms_url = "https://apsac.ap.gov.in/geoserver/ows?"
 
-# Add District Boundary layer
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP District Boundary",
@@ -49,7 +32,6 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
-# Add Village Boundary layer
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP Village Boundary",
@@ -59,17 +41,16 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
-# --- Add point markers safely ---
+# --- Add detailed popups ---
 for _, row in data.iterrows():
-    popup_value = str(row.get(popup_col, "")) if popup_col else ""
+    popup_html = "<br>".join([f"<b>{col}:</b> {row[col]}" for col in info_columns])
     folium.Marker(
         location=[row[lat_col], row[lon_col]],
-        popup=popup_value,
+        popup=folium.Popup(popup_html, max_width=300),
         icon=folium.Icon(color="blue", icon="info-sign")
     ).add_to(m)
 
-# Add layer control
 folium.LayerControl().add_to(m)
 
-# --- Display map in Streamlit ---
-st_data = st_folium(m, width=1200, height=700)
+# --- Display only the map ---
+st_folium(m, width="100%", height=700)
