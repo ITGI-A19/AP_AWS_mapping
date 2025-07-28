@@ -16,9 +16,10 @@ info_columns = [c for c in data.columns if c not in [lat_col, lon_col]]
 # --- Create map ---
 m = folium.Map(location=[data[lat_col].mean(), data[lon_col].mean()], zoom_start=7)
 
-# --- Add WMS Layers ---
+# --- APSAC GeoServer WMS URL ---
 wms_url = "https://apsac.ap.gov.in/geoserver/ows?"
 
+# District Boundary layer
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP District Boundary",
@@ -28,6 +29,17 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
+# Mandal Boundary layer (added between district and village)
+folium.raster_layers.WmsTileLayer(
+    url=wms_url,
+    name="AP Mandal Boundary",
+    layers="admin:ap_mandal_boundary",
+    fmt="image/png",
+    transparent=True,
+    version="1.3.0",
+).add_to(m)
+
+# Village Boundary layer
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP Village Boundary",
@@ -37,7 +49,7 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
-# --- Add simple CircleMarkers (no clustering) ---
+# --- Add points ---
 for _, row in data.iterrows():
     popup_html = "<br>".join([f"<b>{col}:</b> {row[col]}" for col in info_columns])
     folium.CircleMarker(
@@ -50,6 +62,6 @@ for _, row in data.iterrows():
         popup=folium.Popup(popup_html, max_width=300),
     ).add_to(m)
 
-folium.LayerControl().add_to(m)
+folium.LayerControl(collapsed=False).add_to(m)
 
 st_folium(m, width="100%", height=700)
