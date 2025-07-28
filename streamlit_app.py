@@ -3,7 +3,23 @@ import folium
 from streamlit_folium import st_folium
 import pandas as pd
 
+# --- Full page setup ---
 st.set_page_config(page_title="APSAC WMS + Points Viewer", layout="wide")
+
+# --- Expand map to full screen ---
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
+        padding-left: 0rem;
+        padding-right: 0rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # --- Load CSV ---
 data = pd.read_csv("AP Lat_long State and ITGI(1).csv")
@@ -19,7 +35,6 @@ m = folium.Map(location=[data[lat_col].mean(), data[lon_col].mean()], zoom_start
 # --- APSAC GeoServer WMS URL ---
 wms_url = "https://apsac.ap.gov.in/geoserver/ows?"
 
-# District Boundary layer
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP District Boundary",
@@ -29,7 +44,6 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
-# Mandal Boundary layer (added between district and village)
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP Mandal Boundary",
@@ -39,7 +53,6 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
-# Village Boundary layer
 folium.raster_layers.WmsTileLayer(
     url=wms_url,
     name="AP Village Boundary",
@@ -64,4 +77,5 @@ for _, row in data.iterrows():
 
 folium.LayerControl(collapsed=False).add_to(m)
 
-st_folium(m, width="100%", height=700)
+# --- Display full-screen map ---
+st_folium(m, width="100%", height=900)
