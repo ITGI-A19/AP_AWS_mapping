@@ -1,7 +1,6 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-from folium.plugins import MarkerCluster
 import pandas as pd
 
 st.set_page_config(page_title="APSAC WMS + Points Viewer", layout="wide")
@@ -38,9 +37,7 @@ folium.raster_layers.WmsTileLayer(
     version="1.3.0",
 ).add_to(m)
 
-# --- Add clustered markers ---
-marker_cluster = MarkerCluster().add_to(m)
-
+# --- Add simple CircleMarkers (no clustering) ---
 for _, row in data.iterrows():
     popup_html = "<br>".join([f"<b>{col}:</b> {row[col]}" for col in info_columns])
     folium.CircleMarker(
@@ -51,7 +48,7 @@ for _, row in data.iterrows():
         fill_color="blue",
         fill_opacity=0.7,
         popup=folium.Popup(popup_html, max_width=300),
-    ).add_to(marker_cluster)
+    ).add_to(m)
 
 folium.LayerControl().add_to(m)
 
